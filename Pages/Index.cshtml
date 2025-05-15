@@ -1,0 +1,11 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h2>Export</h2>
+    <a class="btn btn-success" href="/Export/ExcelExport">Download Excel</a>
+    <a class="btn btn-danger" href="/Export/PdfExport">Download PDF</a>
+</div>
