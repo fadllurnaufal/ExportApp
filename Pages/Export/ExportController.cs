@@ -2,15 +2,25 @@ using Microsoft.AspNetCore.Mvc;
 using ClosedXML.Excel;
 using Rotativa.AspNetCore;
 using System.Data;
+using ExportApp.Repositories;
+using ExportApp.Models;
 
-namespace ExportApp.Controllers
+namespace ExportApp.Pages
 {
     public class ExportController : Controller
     {
+        private readonly IProductRepository _repo;
+
+        public ExportController(IProductRepository repo)
+        {
+            _repo = repo;
+        }
+
         public IActionResult Index() => View();
 
         public IActionResult ExcelExport()
         {
+            var products = _repo.GetProducts();
             var dt = new DataTable("Products");
             dt.Columns.AddRange(new[] {
                 new DataColumn("ID", typeof(int)),
@@ -18,9 +28,8 @@ namespace ExportApp.Controllers
                 new DataColumn("Price", typeof(double))
             });
 
-            dt.Rows.Add(1, "Product X", 1000);
-            dt.Rows.Add(2, "Product Y", 2000);
-            dt.Rows.Add(3, "Product Z", 3000);
+            foreach (var p in products)
+                dt.Rows.Add(p.ID, p.Name, p.Price);
 
             using var wb = new XLWorkbook();
             wb.Worksheets.Add(dt);
@@ -29,24 +38,17 @@ namespace ExportApp.Controllers
             wb.SaveAs(stream);
             stream.Seek(0, SeekOrigin.Begin);
 
-            return File(stream.ToArray(), 
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-                "TestExport.xlsx");
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "Products.xlsx");
         }
 
         public IActionResult PdfExport()
         {
-            var items = new List<(int ID, string Name, double Price)> {
-                (1, "Product X", 1000),
-                (2, "Product Y", 2000),
-                (3, "Product Z", 3000)
-            };
-
-            return new ViewAsPdf("PdfView", items)
-            {
-                FileName = "TestExport.pdf",
-                PageSize = Rotativa.AspNetCore.Options.Size.A4
-            };
+            var products = _repo.GetProducts();
+            var view = products.Select(p => (p.ID, p.Name, p.Price)).ToList();
+            return new Rotativa.AspNetCore.ViewAsPdf("PdfView", view);
         }
     }
+
 }
